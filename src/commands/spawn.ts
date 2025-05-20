@@ -100,9 +100,9 @@ function randomRangeInt(min: number, max: number) {
 }
 
 function createMuoiAndJoin() {
-  const m = randomRangeInt(3, 15);
+  const m = randomRangeInt(1, 15);
   if (muoi && !muoi.isVoiceConnected) {
-    console.log(`[+] Muoi will join in ${m}s`);
+    console.log(`[+] Muoi will join in ${m}m`);
     setTimeout(async () => {
       if (muoi.isVoiceChannelHasUser()) {
         await muoi.connect();
