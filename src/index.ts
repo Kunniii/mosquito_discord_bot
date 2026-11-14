@@ -1,5 +1,6 @@
 import {
   Client,
+  Events,
   GatewayIntentBits,
   Message,
 } from "discord.js";
@@ -28,12 +29,12 @@ const client = new Client({
 
 const manager = GuildMosquitoManager.getInstance();
 
-client.once("ready", () => {
+client.once(Events.ClientReady, () => {
   Logger.info(`Bot đã sẵn sàng và online dưới tên: ${client.user?.tag}`);
 });
 
 // Xử lý Slash Commands
-client.on("interactionCreate", async (interaction) => {
+client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
   const { commandName } = interaction;
@@ -59,7 +60,7 @@ client.on("interactionCreate", async (interaction) => {
 });
 
 // Xử lý Đập Muỗi qua Chat Mention
-client.on("messageCreate", async (message: Message) => {
+client.on(Events.MessageCreate, async (message: Message) => {
   if (message.author.bot || !message.guild) return;
 
   // Kiểm tra bot có được mention không
@@ -99,7 +100,7 @@ client.on("messageCreate", async (message: Message) => {
 });
 
 // Lắng nghe Voice State để tự động xử lý khi Bot bị ngắt kết nối
-client.on("voiceStateUpdate", (oldState, newState) => {
+client.on(Events.VoiceStateUpdate, (oldState, newState) => {
   // Nếu bot rời phòng voice (bị kick hoặc disconnect)
   if (oldState.member?.id === client.user?.id && !newState.channelId) {
     const guildId = oldState.guild.id;
