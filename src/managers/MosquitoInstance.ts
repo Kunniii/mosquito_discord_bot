@@ -9,6 +9,7 @@ import {
   VoiceConnection,
   AudioPlayer,
   getVoiceConnection,
+  entersState,
 } from "@discordjs/voice";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -156,6 +157,16 @@ export class MosquitoInstance {
       });
 
       this.connection.subscribe(this.player);
+
+      // Chờ cho đến khi Voice Connection đạt trạng thái Ready (tối đa 15 giây)
+      try {
+        await entersState(this.connection, VoiceConnectionStatus.Ready, 15_000);
+      } catch (err) {
+        Logger.error("Failed to connect to voice within 15 seconds", err, this.guildId);
+        this.disconnect();
+        return;
+      }
+
       this.isVoiceConnected = true;
       this.playAudio();
     } catch (error) {

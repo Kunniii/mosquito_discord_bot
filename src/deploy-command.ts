@@ -29,7 +29,7 @@ const rest = new REST({ version: "10" }).setToken(token);
       body: commands,
     });
 
-    Logger.info("Đăng ký thành công các Slash Commands: ping, spawn.");
+    Logger.info("Đăng ký thành công các Slash Commands: ping, spawn, spawn-now.");
   } catch (error) {
     Logger.error("Lỗi khi đăng ký Slash Commands:", error);
   }
