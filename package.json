@@ -4,8 +4,8 @@
   "type": "module",
   "scripts": {
     "start": "npm run deploy && npm run server",
-    "server": "node --env-file=.env src/index.ts",
-    "deploy": "node --env-file=.env src/deploy-command.ts",
+    "server": "node --env-file-if-exists=.env src/index.ts",
+    "deploy": "node --env-file-if-exists=.env src/deploy-command.ts",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
