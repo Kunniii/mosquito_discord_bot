@@ -133,30 +133,23 @@ export class MosquitoInstance {
         });
       }
 
-      this.player = createAudioPlayer();
+      if (!this.player) {
+        this.player = createAudioPlayer();
 
-      this.connection.on(VoiceConnectionStatus.Ready, () => {
-        Logger.info("Voice connection is in Ready state.", this.guildId);
-      });
+        this.player.on(AudioPlayerStatus.Playing, () => {
+          Logger.info("Playing mosquito sound (AudioPlayer Playing).", this.guildId);
+        });
 
-      this.connection.on(VoiceConnectionStatus.Disconnected, () => {
-        Logger.warn("Voice connection disconnected.", this.guildId);
-        this.handleDisconnect();
-      });
+        this.player.on(AudioPlayerStatus.Idle, () => {
+          if (this.isVoiceConnected && this.isEnabled) {
+            this.playAudio();
+          }
+        });
 
-      this.player.on(AudioPlayerStatus.Playing, () => {
-        Logger.info("Playing mosquito sound.", this.guildId);
-      });
-
-      this.player.on(AudioPlayerStatus.Idle, () => {
-        if (this.isVoiceConnected && this.isEnabled) {
-          this.playAudio();
-        }
-      });
-
-      this.player.on("error", (error) => {
-        Logger.error(`AudioPlayer error: ${error.message}`, error, this.guildId);
-      });
+        this.player.on("error", (error) => {
+          Logger.error(`AudioPlayer error: ${error.message}`, error, this.guildId);
+        });
+      }
 
       this.connection.subscribe(this.player);
 
@@ -184,8 +177,16 @@ export class MosquitoInstance {
 
   private playAudio() {
     try {
-      const resource = createAudioResource(this.soundPath);
-      this.player?.play(resource);
+      if (!this.player) {
+        Logger.warn("Cannot play audio: player is undefined", this.guildId);
+        return;
+      }
+      Logger.info(`Creating audio resource from ${this.soundPath}`, this.guildId);
+      const resource = createAudioResource(this.soundPath, {
+        inlineVolume: true,
+      });
+      resource.volume?.setVolume(1.0);
+      this.player.play(resource);
     } catch (err) {
       Logger.error("Error creating audio resource", err, this.guildId);
     }
