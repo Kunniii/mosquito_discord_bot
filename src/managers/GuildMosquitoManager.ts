@@ -37,6 +37,22 @@ export class GuildMosquitoManager {
     return mosquito;
   }
 
+  public async registerAndSpawnNow(channel: VoiceChannel, config?: Partial<MosquitoConfig>): Promise<MosquitoInstance> {
+    const guildId = channel.guild.id;
+    let mosquito = this.instances.get(guildId);
+
+    if (mosquito) {
+      mosquito.stop();
+      mosquito.updateChannel(channel);
+    } else {
+      mosquito = new MosquitoInstance(channel, config);
+      this.instances.set(guildId, mosquito);
+    }
+
+    await mosquito.spawnNow();
+    return mosquito;
+  }
+
   public stop(guildId: string): boolean {
     const mosquito = this.instances.get(guildId);
     if (mosquito) {

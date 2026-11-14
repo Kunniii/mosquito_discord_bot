@@ -2,11 +2,13 @@ import { REST } from "@discordjs/rest";
 import { Routes } from "discord-api-types/v10";
 import { pingCommand } from "./commands/ping.ts";
 import { spawnCommand } from "./commands/spawn.ts";
+import { spawnNowCommand } from "./commands/spawn-now.ts";
 import { Logger } from "./utils/logger.ts";
 
 const commands = [
   pingCommand.toJSON(),
   spawnCommand.toJSON(),
+  spawnNowCommand.toJSON(),
 ];
 
 const token = process.env.TOKEN;

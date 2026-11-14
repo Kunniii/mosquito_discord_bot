@@ -54,6 +54,13 @@ export class MosquitoInstance {
     this.scheduleNextSpawn();
   }
 
+  public async spawnNow() {
+    this.isEnabled = true;
+    this.clearSpawnTimer();
+    Logger.info("Forcing mosquito to spawn immediately (spawn-now).", this.guildId);
+    await this.connect();
+  }
+
   public stop() {
     this.isEnabled = false;
     this.clearSpawnTimer();
