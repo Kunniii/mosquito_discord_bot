@@ -1,0 +1,11 @@
+services:
+  mosquito-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mosquito_discord_bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production

@@ -103,6 +103,37 @@ npm run typecheck
 
 ---
 
+## 🐳 Triển khai với Docker & Docker Compose
+
+Dự án đã được cấu hình sẵn `Dockerfile` chuẩn hóa trên nền **Node.js v24 (Bookworm-slim)** và `docker-compose.yml`.
+
+### Chạy nhanh bằng Docker Compose:
+
+1. Đảm bảo file `.env` đã có `TOKEN` và `APP_ID`.
+2. Khởi chạy container:
+```bash
+docker compose up -d --build
+```
+3. Xem log hoạt động của bot:
+```bash
+docker compose logs -f
+```
+4. Dừng container:
+```bash
+docker compose down
+```
+
+### Build và chạy Docker thủ công:
+```bash
+# Build image
+docker build -t mosquito-bot .
+
+# Chạy container với file .env
+docker run -d --name mosquito-bot --env-file .env --restart unless-stopped mosquito-bot
+```
+
+---
+
 ## 🏗️ Cấu trúc thư mục dự án
 
 ```text
