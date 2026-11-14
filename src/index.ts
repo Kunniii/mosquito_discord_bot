@@ -95,19 +95,12 @@ client.on(Events.MessageCreate, async (message: Message) => {
     if (manager.isConnected(guildId)) {
       if (hasSlapKeyword) {
         manager.slap(guildId, message.author.displayName);
-        const stats = tracker.recordSlap(guildId, message.author.id, message.author.displayName);
-        const embed = tracker.createSlapEmbed(
-          message.author.displayName,
-          message.author.displayAvatarURL(),
-          stats
-        );
-        await message.reply({ embeds: [embed] });
+        tracker.recordSlap(guildId, message.author.id, message.author.displayName);
+        const replyText = tracker.formatSlapText(message.author.displayName, message.author.id, guildId);
+        await message.reply(replyText);
       } else {
-        const failEmbed = tracker.createFailEmbed(
-          message.author.displayName,
-          message.author.displayAvatarURL()
-        );
-        await message.reply({ embeds: [failEmbed] });
+        const failText = tracker.formatFailText(message.author.id);
+        await message.reply(failText);
       }
     } else {
       await message.reply(

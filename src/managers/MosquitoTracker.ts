@@ -5,7 +5,10 @@ export interface GuildMosquitoStats {
   currentStreak: number;
   highestStreak: number;
   lastSlappedBy?: string;
+  lastSlappedUserId?: string;
   userSlapCounts: Record<string, number>;
+  userStreaks: Record<string, number>;
+  userHighestStreaks: Record<string, number>;
 }
 
 export class MosquitoTracker {
@@ -29,13 +32,15 @@ export class MosquitoTracker {
         currentStreak: 0,
         highestStreak: 0,
         userSlapCounts: {},
+        userStreaks: {},
+        userHighestStreaks: {},
       };
       this.stats.set(guildId, stat);
     }
     return stat;
   }
 
-  public recordSlap(guildId: string, userId: string, displayName: string): GuildMosquitoStats {
+  public recordSlap(guildId: string, userId: string, displayName: string): { stats: GuildMosquitoStats; userStreak: number; userTotal: number } {
     const stat = this.getStats(guildId);
 
     stat.totalSlaps += 1;
@@ -43,10 +48,34 @@ export class MosquitoTracker {
     if (stat.currentStreak > stat.highestStreak) {
       stat.highestStreak = stat.currentStreak;
     }
-    stat.lastSlappedBy = displayName;
-    stat.userSlapCounts[userId] = (stat.userSlapCounts[userId] || 0) + 1;
 
-    return stat;
+    stat.lastSlappedBy = displayName;
+    stat.lastSlappedUserId = userId;
+
+    // Cập nhật thống kê cá nhân của người dùng
+    stat.userSlapCounts[userId] = (stat.userSlapCounts[userId] || 0) + 1;
+    stat.userStreaks[userId] = (stat.userStreaks[userId] || 0) + 1;
+    if (stat.userStreaks[userId] > (stat.userHighestStreaks[userId] || 0)) {
+      stat.userHighestStreaks[userId] = stat.userStreaks[userId];
+    }
+
+    return {
+      stats: stat,
+      userStreak: stat.userStreaks[userId],
+      userTotal: stat.userSlapCounts[userId],
+    };
+  }
+
+  public formatSlapText(displayName: string, userId: string, guildId: string): string {
+    const stat = this.getStats(guildId);
+    const userStreak = stat.userStreaks[userId] || 1;
+    const userTotal = stat.userSlapCounts[userId] || 1;
+
+    return `💥 **BỐP!** <@${userId}> vừa đập nát con muỗi! 🦟🪦 | 🔥 **Streak của bạn:** ${userStreak} liên tiếp *(Tổng diệt: ${userTotal} con)*`;
+  }
+
+  public formatFailText(userId: string): string {
+    return `🦟 **Lêu lêu!** <@${userId}> đập hụt rồi nhé! Muỗi vẫn đang bay vo ve 😜`;
   }
 
   public resetStreak(guildId: string) {

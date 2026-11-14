@@ -27,13 +27,12 @@ export async function execute(interaction: CommandInteraction) {
   if (manager.isConnected(guildId)) {
     const member = interaction.member as GuildMember;
     const displayName = member?.displayName || interaction.user.displayName || interaction.user.username;
-    const avatarUrl = interaction.user.displayAvatarURL();
 
     manager.slap(guildId, displayName);
-    const stats = tracker.recordSlap(guildId, interaction.user.id, displayName);
-    const embed = tracker.createSlapEmbed(displayName, avatarUrl, stats);
+    tracker.recordSlap(guildId, interaction.user.id, displayName);
+    const replyText = tracker.formatSlapText(displayName, interaction.user.id, guildId);
 
-    await interaction.reply({ embeds: [embed] });
+    await interaction.reply({ content: replyText });
   } else {
     await interaction.reply({
       content: "🦟 Muỗi chưa bay vào phòng voice nào á cậu, từ từ =))",
