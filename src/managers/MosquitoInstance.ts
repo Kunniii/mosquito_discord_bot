@@ -10,6 +10,7 @@ import {
   AudioPlayer,
   getVoiceConnection,
   entersState,
+  NoSubscriberBehavior,
 } from "@discordjs/voice";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -138,7 +139,11 @@ export class MosquitoInstance {
       this.isVoiceConnected = true;
 
       if (!this.player) {
-        this.player = createAudioPlayer();
+        this.player = createAudioPlayer({
+          behaviors: {
+            noSubscriber: NoSubscriberBehavior.Play,
+          },
+        });
 
         this.player.on(AudioPlayerStatus.Playing, () => {
           Logger.info("Playing mosquito sound (AudioPlayer Playing).", this.guildId);
