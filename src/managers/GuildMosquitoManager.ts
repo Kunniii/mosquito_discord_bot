@@ -1,4 +1,5 @@
 import { VoiceChannel } from "discord.js";
+import { getVoiceConnection, VoiceConnectionStatus } from "@discordjs/voice";
 import { MosquitoInstance } from "./MosquitoInstance.ts";
 import type { MosquitoConfig } from "./MosquitoInstance.ts";
 import { Logger } from "../utils/logger.ts";
@@ -64,14 +65,22 @@ export class GuildMosquitoManager {
 
   public slap(guildId: string, authorDisplayName: string): boolean {
     const mosquito = this.instances.get(guildId);
-    if (mosquito && mosquito.isVoiceConnected) {
+    const existing = getVoiceConnection(guildId);
+    if (mosquito) {
       return mosquito.slap(authorDisplayName);
+    } else if (existing) {
+      existing.destroy();
+      return true;
     }
     return false;
   }
 
   public isConnected(guildId: string): boolean {
     const mosquito = this.instances.get(guildId);
-    return Boolean(mosquito && mosquito.isVoiceConnected);
+    const existing = getVoiceConnection(guildId);
+    return Boolean(
+      (mosquito && (mosquito.isVoiceConnected || mosquito.connection)) ||
+      (existing && existing.state.status !== VoiceConnectionStatus.Destroyed)
+    );
   }
 }

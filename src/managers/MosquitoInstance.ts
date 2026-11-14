@@ -31,7 +31,7 @@ export class MosquitoInstance {
   public isEnabled = false;
   public isVoiceConnected = false;
 
-  private connection: VoiceConnection | undefined;
+  public connection: VoiceConnection | undefined;
   private player: AudioPlayer | undefined;
   private timer: NodeJS.Timeout | undefined;
   private minMinutes: number;
@@ -70,7 +70,8 @@ export class MosquitoInstance {
   }
 
   public slap(slappedBy: string): boolean {
-    if (!this.isVoiceConnected) {
+    const existing = getVoiceConnection(this.guildId);
+    if (!this.isVoiceConnected && !this.connection && !existing) {
       return false;
     }
 
@@ -133,6 +134,9 @@ export class MosquitoInstance {
         });
       }
 
+      // Đánh dấu muỗi đã vào phòng thoại
+      this.isVoiceConnected = true;
+
       if (!this.player) {
         this.player = createAudioPlayer();
 
@@ -153,19 +157,16 @@ export class MosquitoInstance {
 
       this.connection.subscribe(this.player);
 
-      // Lắng nghe nếu đã Ready thì phát nhạc ngay, hoặc đợi nếu đang kết nối
+      // Nếu đã Ready thì phát nhạc ngay, nếu chưa thì đợi và phát
       if (this.connection.state.status === VoiceConnectionStatus.Ready) {
-        this.isVoiceConnected = true;
         this.playAudio();
       } else {
         entersState(this.connection, VoiceConnectionStatus.Ready, 20_000)
           .then(() => {
-            this.isVoiceConnected = true;
             this.playAudio();
           })
           .catch((err) => {
             Logger.warn("Voice did not reach Ready state quickly, attempting playback anyway:", this.guildId);
-            this.isVoiceConnected = true;
             this.playAudio();
           });
       }

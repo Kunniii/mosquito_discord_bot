@@ -8,6 +8,7 @@ import { execute as executePing } from "./commands/ping.ts";
 import { execute as executeSpawn } from "./commands/spawn.ts";
 import { execute as executeSpawnNow } from "./commands/spawn-now.ts";
 import { execute as executeStats } from "./commands/stats.ts";
+import { execute as executeDap } from "./commands/dap.ts";
 import { GuildMosquitoManager } from "./managers/GuildMosquitoManager.ts";
 import { MosquitoTracker } from "./managers/MosquitoTracker.ts";
 import { Logger } from "./utils/logger.ts";
@@ -48,6 +49,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
       await executeSpawnNow(interaction);
     } else if (commandName === "mosquito-stats") {
       await executeStats(interaction);
+    } else if (commandName === "dap" || commandName === "slap") {
+      await executeDap(interaction);
     }
   } catch (error) {
     Logger.error(`Lỗi khi thực thi lệnh /${commandName}:`, error, interaction.guildId ?? undefined);
@@ -59,23 +62,38 @@ client.on(Events.InteractionCreate, async (interaction) => {
   }
 });
 
-// Xử lý Đập Muỗi qua Chat Mention
+// Xử lý Đập Muỗi qua Chat (Mention hoặc Prefix command !dap, !slap, dap muoi)
 client.on(Events.MessageCreate, async (message: Message) => {
   if (message.author.bot || !message.guild) return;
 
-  // Kiểm tra bot có được mention không
-  if (message.mentions.has(client.user!)) {
-    const guildId = message.guild.id;
+  const guildId = message.guild.id;
+  const isMentioned = message.mentions.has(client.user!);
+  const contentLower = message.content.toLowerCase().trim();
+
+  // Nhận diện prefix command: !dap, !slap, dap muoi, đập muỗi
+  const isPrefixSlap =
+    contentLower.startsWith("!dap") ||
+    contentLower.startsWith("!slap") ||
+    contentLower.startsWith("dap muoi") ||
+    contentLower.startsWith("đập muỗi") ||
+    contentLower.startsWith("/dap") ||
+    contentLower.startsWith("/slap");
+
+  if (isMentioned || isPrefixSlap) {
     const tracker = MosquitoTracker.getInstance();
 
-    // Loại bỏ mention <@ID> hoặc <@!ID> khỏi nội dung tin nhắn để lấy từ khóa
+    // Loại bỏ mention <@ID> hoặc <@!ID> khỏi nội dung tin nhắn để tìm từ khóa
     const contentWithoutMention = message.content.replace(/<@!?\d+>/g, "").trim().toLowerCase();
-    const commandWord = contentWithoutMention.split(/\s+/)[0];
 
-    const acceptCommands = ["slap", "dap", "đập", "hit", "cmm", "dmm", "dcmm", "kill", "👏"];
+    const acceptKeywords = [
+      "slap", "dap", "đập", "hit", "kill", "giết", "chết", "cút", "vỗ",
+      "cmm", "dmm", "dcmm", "👏", "bốp", "die"
+    ];
+
+    const hasSlapKeyword = isPrefixSlap || acceptKeywords.some((kw) => contentWithoutMention.includes(kw));
 
     if (manager.isConnected(guildId)) {
-      if (acceptCommands.includes(commandWord)) {
+      if (hasSlapKeyword) {
         manager.slap(guildId, message.author.displayName);
         const stats = tracker.recordSlap(guildId, message.author.id, message.author.displayName);
         const embed = tracker.createSlapEmbed(
