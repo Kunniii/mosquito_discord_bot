@@ -1,16 +1,39 @@
 # 🦟 Mosquito Discord Bot
 
 <p align="center">
-  <b>Bot Discord giải trí mô phỏng tiếng muỗi vo ve gây ức chế trong kênh thoại, hỗ trợ đa server (Multi-Guild) và chạy trực tiếp trên Node.js v24+ Native TypeScript.</b>
+  <b>Bot Discord giải trí mô phỏng tiếng muỗi vo ve gây ức chế trong kênh thoại, hỗ trợ đa máy chủ (Multi-Guild) và chạy trực tiếp trên Node.js v24+ Native TypeScript.</b>
 </p>
+
+---
+
+## 🌐 Trạng thái hỗ trợ Đa máy chủ (Multi-Server Readiness)
+
+**Bot ĐÃ SẴN SÀNG 100% cho nhiều server (Multi-Guild Concurrent):**
+- **Cách ly trạng thái tuyệt đối:** Mỗi server Discord (`guildId`) được quản lý bằng một instance độc lập qua `GuildMosquitoManager` và `MosquitoInstance`.
+- **Không chồng chéo hay xung đột:** Việc bật/tắt `/spawn`, đếm ngược timer ngẫu nhiên, hoặc phát âm thanh ở Server A hoàn toàn không ảnh hưởng đến Server B.
+- **Tự động giải phóng tài nguyên:** Khi bot bị kick hoặc phòng thoại hết người, bot tự động dọn dẹp kết nối voice và timer của riêng server đó.
+
+---
+
+## 📊 Chính sách & Thu thập dữ liệu Giám sát (Telemetry & Data Collection)
+
+Nhằm mục đích theo dõi độ ổn định, hiệu năng kết nối thoại (`@discordjs/voice`) và tối ưu hóa trải nghiệm mô phỏng muỗi trên môi trường đa server, bot thực hiện thu thập telemetry ẩn danh ở mức tối thiểu:
+
+- **Dữ liệu được thu thập:**
+  - **ID Máy chủ (`guildId`):** Phân biệt log và phiên hoạt động theo từng server.
+  - **ID Kênh thoại (`channelId`):** Theo dõi trạng thái kết nối, ngắt kết nối và thời lượng bot bay vào phòng thoại.
+  - **Sự kiện tương tác người dùng:** Đếm số lần thực thi lệnh `/spawn` và số lần muỗi bị "đập" (`slap`) cùng `displayName` của người thực hiện để hiển thị thông báo phản hồi trong kênh.
+  - **Độ trễ & Mã lỗi thoại:** Ghi nhận lỗi AudioPlayer hoặc Voice Connection Status (Ready/Disconnected) phục vụ việc fix bug tự động.
+- **Cam kết bảo mật:**
+  - Bot **KHÔNG** ghi âm, thu thập hay lưu trữ bất kỳ luồng âm thanh (voice packets) nào của người dùng.
+  - **KHÔNG** đọc, quét hay lưu trữ nội dung tin nhắn chat thông thường (ngoại trừ việc bắt tin nhắn mention trực tiếp bot để kích hoạt cơ chế đập muỗi).
+  - Dữ liệu log chỉ lưu cục bộ trên console/hệ thống giám sát nội bộ của chủ sở hữu bot.
 
 ---
 
 ## ✨ Tính năng nổi bật
 
-- **🌐 Hỗ trợ đa máy chủ (Multi-Guild Scalability):**
-  - Tách biệt và cách ly trạng thái hoàn toàn giữa các server (`Map<guildId, MosquitoInstance>`).
-  - Cho phép bot hoạt động cùng lúc trên nhiều máy chủ Discord mà không bị xung đột kết nối voice hay đè lệnh lẫn nhau.
+- **🌐 Hỗ trợ đa máy chủ (Multi-Guild Scalability):** Tách biệt và cách ly trạng thái hoàn toàn giữa các server (`Map<guildId, MosquitoInstance>`).
 - **🦟 Dịch vụ muỗi vo ve (`/spawn`):**
   - **Hẹn giờ ngẫu nhiên:** Muỗi tự động bay vào phòng thoại mục tiêu sau khoảng thời gian ngẫu nhiên từ 1 đến 15 phút.
   - **Cảm biến phòng thoại thông minh:** Kiểm tra xem phòng có người thật (không tính bot) hay không trước khi join. Nếu phòng trống, bot sẽ tự dời lịch hẹn tiếp theo.
@@ -18,7 +41,7 @@
 - **👏 Cơ chế "Đập muỗi" (Slap/Kill):**
   - Khi muỗi đang trong phòng thoại, chỉ cần tag bot `@MosquitoBot` kèm các từ khóa (`dap`, `đập`, `slap`, `hit`, `kill`, `👏`, `cmm`, ...), bot sẽ bị "đập chết" và văng khỏi kênh thoại ngay lập tức, đồng thời bắt đầu đếm ngược đợt tái sinh kế tiếp.
 - **⚡ Chạy Native TypeScript trên Node.js v24+:**
-  - Không cần bước build/bundle trung gian, không cần `ts-node`, đã loại bỏ hoàn toàn Bun.
+  - Không cần build/bundle trung gian, không cần `ts-node`, đã loại bỏ hoàn toàn Bun.
   - Chạy trực tiếp mã nguồn TypeScript với tính năng Type Stripping có sẵn trên Node.js v24.
 
 ---
@@ -91,7 +114,7 @@ src/
 │   ├── GuildMosquitoManager.ts # Quản lý và điều phối muỗi theo từng Server
 │   └── MosquitoInstance.ts     # Trạng thái vòng đời & audio của muỗi trong 1 Server
 ├── utils/
-│   └── logger.ts            # Logger ghi log chuẩn hóa theo [GuildId]
+│   └── logger.ts            # Logger ghi log chuẩn hóa telemetry theo [GuildId]
 ├── deploy-command.ts        # Script đăng ký slash commands lên Discord API
 └── index.ts                 # Điểm khởi chạy chính của Bot Discord
 ```
