@@ -1,22 +1,36 @@
 import { REST } from "@discordjs/rest";
 import { Routes } from "discord-api-types/v10";
-import { pingCommand } from "./commands/ping";
-import { spawnCommand } from "./commands/spawn";
+import { pingCommand } from "./commands/ping.ts";
+import { spawnCommand } from "./commands/spawn.ts";
+import { vckickCommand } from "./commands/vckick.ts";
+import { Logger } from "./utils/logger.ts";
 
-const commands = [pingCommand.toJSON(), spawnCommand.toJSON()];
+const commands = [
+  pingCommand.toJSON(),
+  spawnCommand.toJSON(),
+  vckickCommand.toJSON(),
+];
 
-const rest = new REST({ version: "10" }).setToken(process.env.TOKEN as string);
+const token = process.env.TOKEN;
+const appId = process.env.APP_ID;
+
+if (!token || !appId) {
+  Logger.error("Vui lòng cung cấp đầy đủ biến môi trường TOKEN và APP_ID trong .env");
+  process.exit(1);
+}
+
+const rest = new REST({ version: "10" }).setToken(token);
 
 (async () => {
   try {
-    console.log("Started refreshing application (/) commands.");
+    Logger.info("Bắt đầu đăng ký (deploy) các Slash Commands...");
 
-    await rest.put(Routes.applicationCommands(process.env.APP_ID as string), {
+    await rest.put(Routes.applicationCommands(appId), {
       body: commands,
     });
 
-    console.log("Successfully reloaded application (/) commands.");
+    Logger.info("Đăng ký thành công các Slash Commands: ping, spawn, vckick.");
   } catch (error) {
-    console.error(error);
+    Logger.error("Lỗi khi đăng ký Slash Commands:", error);
   }
 })();

@@ -3,8 +3,9 @@ import { CommandInteraction } from "discord.js";
 
 export const pingCommand = new SlashCommandBuilder()
   .setName("ping")
-  .setDescription("Replies with Pong!");
+  .setDescription("Kiểm tra độ trễ phản hồi của Bot");
 
 export async function execute(interaction: CommandInteraction) {
-  await interaction.reply("Pong!");
+  const latency = Date.now() - interaction.createdTimestamp;
+  await interaction.reply(`🏓 Pong! Độ trễ phản hồi: ${latency}ms`);
 }

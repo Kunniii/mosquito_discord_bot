@@ -1,17 +1,16 @@
 {
   "name": "mosquito_discord_bot",
-  "module": "index.ts",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "start": "bun run deploy && bun run server",
-    "server": "bun run src/index.ts",
-    "deploy": "bun run src/deploy-command.ts"
+    "start": "npm run deploy && npm run server",
+    "server": "node src/index.ts",
+    "deploy": "node src/deploy-command.ts",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "@types/bun": "latest"
-  },
-  "peerDependencies": {
-    "typescript": "^5.0.0"
+    "@types/node": "^24.0.0",
+    "typescript": "^5.4.5"
   },
   "dependencies": {
     "@discordjs/opus": "^0.9.0",
@@ -20,10 +19,6 @@
     "discord-api-types": "^0.37.93",
     "discord.js": "^14.15.3",
     "ffmpeg-static": "^5.2.0",
-    "libsodium-wrappers": "^0.7.14",
-    "opusscript": "^0.1.1",
-    "sodium": "^3.0.2",
-    "sodium-native": "^4.1.1",
-    "tweetnacl": "^1.0.3"
+    "libsodium-wrappers": "^0.7.14"
   }
 }
