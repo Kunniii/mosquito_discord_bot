@@ -17,9 +17,6 @@
   - **Lặp âm thanh liên tục:** Phát lặp vô tận âm thanh muỗi vo ve (`src/assets/sound.mp3`) qua `@discordjs/voice`.
 - **👏 Cơ chế "Đập muỗi" (Slap/Kill):**
   - Khi muỗi đang trong phòng thoại, chỉ cần tag bot `@MosquitoBot` kèm các từ khóa (`dap`, `đập`, `slap`, `hit`, `kill`, `👏`, `cmm`, ...), bot sẽ bị "đập chết" và văng khỏi kênh thoại ngay lập tức, đồng thời bắt đầu đếm ngược đợt tái sinh kế tiếp.
-- **👢 Quản trị Voice Channel (`/vckick`):**
-  - Cho phép Quản trị viên / Moderator có quyền `Move Members` đuổi người dùng bất kỳ ra khỏi kênh thoại.
-  - Đầy đủ kiểm tra quyền và phân cấp Role (Role Hierarchy): bot sẽ từ chối nếu role của đối tượng ngang bằng hoặc cao hơn role của bot.
 - **⚡ Chạy Native TypeScript trên Node.js v24+:**
   - Không cần bước build/bundle trung gian, không cần `ts-node`, đã loại bỏ hoàn toàn Bun.
   - Chạy trực tiếp mã nguồn TypeScript với tính năng Type Stripping có sẵn trên Node.js v24.
@@ -32,7 +29,6 @@
 | :--- | :--- | :--- |
 | `/spawn on <kênh_thoại>` | Bật dịch vụ muỗi vo ve cho kênh thoại chỉ định | Thành viên server |
 | `/spawn off` | Tắt dịch vụ muỗi và lập tức ngắt kết nối voice | Thành viên server |
-| `/vckick <target> [reason]` | Đuổi thành viên ra khỏi kênh thoại đang tham gia | Quyền `Move Members` (User & Bot) |
 | `/ping` | Kiểm tra độ trễ phản hồi của Bot | Không yêu cầu |
 
 ---
@@ -90,8 +86,7 @@ npm run typecheck
 src/
 ├── commands/
 │   ├── ping.ts              # Lệnh kiểm tra độ trễ ping
-│   ├── spawn.ts             # Lệnh bật/tắt dịch vụ muỗi vo ve
-│   └── vckick.ts            # Lệnh kick người dùng khỏi voice channel
+│   └── spawn.ts             # Lệnh bật/tắt dịch vụ muỗi vo ve
 ├── managers/
 │   ├── GuildMosquitoManager.ts # Quản lý và điều phối muỗi theo từng Server
 │   └── MosquitoInstance.ts     # Trạng thái vòng đời & audio của muỗi trong 1 Server

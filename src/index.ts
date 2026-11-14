@@ -5,7 +5,6 @@ import {
 } from "discord.js";
 import { execute as executePing } from "./commands/ping.ts";
 import { execute as executeSpawn } from "./commands/spawn.ts";
-import { execute as executeVcKick } from "./commands/vckick.ts";
 import { GuildMosquitoManager } from "./managers/GuildMosquitoManager.ts";
 import { Logger } from "./utils/logger.ts";
 
@@ -41,8 +40,6 @@ client.on("interactionCreate", async (interaction) => {
       await executePing(interaction);
     } else if (commandName === "spawn") {
       await executeSpawn(interaction);
-    } else if (commandName === "vckick") {
-      await executeVcKick(interaction);
     }
   } catch (error) {
     Logger.error(`Lỗi khi thực thi lệnh /${commandName}:`, error, interaction.guildId ?? undefined);

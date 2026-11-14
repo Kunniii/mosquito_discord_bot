@@ -2,13 +2,11 @@ import { REST } from "@discordjs/rest";
 import { Routes } from "discord-api-types/v10";
 import { pingCommand } from "./commands/ping.ts";
 import { spawnCommand } from "./commands/spawn.ts";
-import { vckickCommand } from "./commands/vckick.ts";
 import { Logger } from "./utils/logger.ts";
 
 const commands = [
   pingCommand.toJSON(),
   spawnCommand.toJSON(),
-  vckickCommand.toJSON(),
 ];
 
 const token = process.env.TOKEN;
@@ -29,7 +27,7 @@ const rest = new REST({ version: "10" }).setToken(token);
       body: commands,
     });
 
-    Logger.info("Đăng ký thành công các Slash Commands: ping, spawn, vckick.");
+    Logger.info("Đăng ký thành công các Slash Commands: ping, spawn.");
   } catch (error) {
     Logger.error("Lỗi khi đăng ký Slash Commands:", error);
   }
