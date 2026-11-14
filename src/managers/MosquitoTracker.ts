@@ -57,30 +57,24 @@ export class MosquitoTracker {
   public createSlapEmbed(displayName: string, userAvatarUrl: string | null, stats: GuildMosquitoStats): EmbedBuilder {
     const streakTitle = stats.currentStreak > 1 ? ` 🔥 Chuỗi đập: ${stats.currentStreak} lần liên tiếp!` : "";
     
-    // Hình ảnh gif đập muỗi / diệt muỗi sinh động
-    const slapGifs = [
-      "https://media.giphy.com/media/l41lI4bYmcsPJX9Go/giphy.gif",
-      "https://media.giphy.com/media/xUPGcz2H1TXdCz4suY/giphy.gif",
-      "https://media.giphy.com/media/3o7TKMt1VVNkHV2PaE/giphy.gif"
-    ];
-    const randomGif = slapGifs[Math.floor(Math.random() * slapGifs.length)];
+    // GIF "The Beast - I'm beasting it" siêu ngầu
+    const beastGif = "https://media.tenor.com/oT_tiSLfRGUAAAAC/the-beast-im-beasting-it.gif";
 
     return new EmbedBuilder()
       .setColor(0xff3366) // Màu hồng đỏ nổi bật
       .setTitle(`💥 BỐP! Con muỗi đã bị đập nát! ${streakTitle}`)
       .setDescription(
-        `Dũng sĩ **${displayName}** vừa tung một cú vỗ thần sầu tiễn con muỗi về thế giới bên kia! 🦟🪦`
+        `Dũng sĩ **${displayName}** vừa hoá quái thú tung đòn sấm sét tiêu diệt con muỗi! 🦟🪦\n*“I’M BEASTING IT!”* 🔥`
       )
       .addFields(
-        { name: "⚡ Chuỗi hiện tại (Streak)", value: `**${stats.currentStreak}** lần`, inline: true },
-        { name: "🏆 Chuỗi kỷ lục", value: `**${stats.highestStreak}** lần`, inline: true },
-        { name: "📊 Tổng số muỗi đã diệt", value: `**${stats.totalSlaps}** con`, inline: true }
+        { name: "⚡ Chuỗi (Streak)", value: `**${stats.currentStreak}** lần`, inline: true },
+        { name: "👑 Kỷ lục", value: `**${stats.highestStreak}** lần`, inline: true },
+        { name: "☠️ Đã diệt", value: `**${stats.totalSlaps}** con`, inline: true }
       )
-      .setImage(randomGif)
+      .setImage(beastGif)
       .setThumbnail(userAvatarUrl || "https://cdn-icons-png.flaticon.com/512/2822/2822506.png")
       .setFooter({
-        text: "Mosquito Slayer Tracker • Muỗi sẽ tái sinh sau ít phút nữa...",
-        iconURL: "https://cdn-icons-png.flaticon.com/512/2822/2822506.png",
+        text: "Mosquito Slayer • The Beast • Muỗi sẽ tái sinh sau ít phút...",
       })
       .setTimestamp();
   }
