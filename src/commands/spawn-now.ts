@@ -22,6 +22,9 @@ export async function execute(interaction: CommandInteraction) {
   }
 
   if (interaction.isChatInputCommand()) {
+    // Hoãn phản hồi (deferReply) ngay lập tức để tránh lỗi timeout 3 giây của Discord
+    await interaction.deferReply();
+
     let channel = interaction.options.getChannel("kênh_thoại");
 
     // Nếu không truyền option kênh_thoại, lấy kênh người dùng đang tham gia
@@ -33,9 +36,8 @@ export async function execute(interaction: CommandInteraction) {
     }
 
     if (!(channel instanceof VoiceChannel)) {
-      await interaction.reply({
+      await interaction.editReply({
         content: "Vui lòng chọn một kênh Voice hoặc tự tham gia vào một Voice room trước! :face_holding_back_tears:",
-        ephemeral: true,
       });
       return;
     }
@@ -43,6 +45,6 @@ export async function execute(interaction: CommandInteraction) {
     const manager = GuildMosquitoManager.getInstance();
     await manager.registerAndSpawnNow(channel);
 
-    await interaction.reply(`🦟 **BZZZ!** Muỗi đã xuất hiện và bay thẳng vào phòng <#${channel.id}> ngay lập tức! :eyes:`);
+    await interaction.editReply(`🦟 **BZZZ!** Muỗi đã xuất hiện và bay thẳng vào phòng <#${channel.id}> ngay lập tức! :eyes:`);
   }
 }

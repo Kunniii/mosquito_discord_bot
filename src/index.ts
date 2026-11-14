@@ -6,7 +6,9 @@ import {
 import { execute as executePing } from "./commands/ping.ts";
 import { execute as executeSpawn } from "./commands/spawn.ts";
 import { execute as executeSpawnNow } from "./commands/spawn-now.ts";
+import { execute as executeStats } from "./commands/stats.ts";
 import { GuildMosquitoManager } from "./managers/GuildMosquitoManager.ts";
+import { MosquitoTracker } from "./managers/MosquitoTracker.ts";
 import { Logger } from "./utils/logger.ts";
 
 const token = process.env.TOKEN;
@@ -43,6 +45,8 @@ client.on("interactionCreate", async (interaction) => {
       await executeSpawn(interaction);
     } else if (commandName === "spawn-now") {
       await executeSpawnNow(interaction);
+    } else if (commandName === "mosquito-stats") {
+      await executeStats(interaction);
     }
   } catch (error) {
     Logger.error(`Lỗi khi thực thi lệnh /${commandName}:`, error, interaction.guildId ?? undefined);
@@ -61,6 +65,7 @@ client.on("messageCreate", async (message: Message) => {
   // Kiểm tra bot có được mention không
   if (message.mentions.has(client.user!)) {
     const guildId = message.guild.id;
+    const tracker = MosquitoTracker.getInstance();
 
     // Loại bỏ mention <@ID> hoặc <@!ID> khỏi nội dung tin nhắn để lấy từ khóa
     const contentWithoutMention = message.content.replace(/<@!?\d+>/g, "").trim().toLowerCase();
@@ -71,13 +76,19 @@ client.on("messageCreate", async (message: Message) => {
     if (manager.isConnected(guildId)) {
       if (acceptCommands.includes(commandWord)) {
         manager.slap(guildId, message.author.displayName);
-        await message.reply(
-          `# :rightwards_pushing_hand: :mosquito: :leftwards_pushing_hand:\n## Cậu **${message.author.displayName}** mới đập muỗi! :mosquito: :clap:`
+        const stats = tracker.recordSlap(guildId, message.author.id, message.author.displayName);
+        const embed = tracker.createSlapEmbed(
+          message.author.displayName,
+          message.author.displayAvatarURL(),
+          stats
         );
+        await message.reply({ embeds: [embed] });
       } else {
-        await message.reply(
-          `# :mosquito: :smirk:\n## Lêu lêu cậu **${message.author.displayName}** không biết đập muỗi! :smirk:`
+        const failEmbed = tracker.createFailEmbed(
+          message.author.displayName,
+          message.author.displayAvatarURL()
         );
+        await message.reply({ embeds: [failEmbed] });
       }
     } else {
       await message.reply(

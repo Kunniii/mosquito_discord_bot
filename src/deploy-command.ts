@@ -3,12 +3,14 @@ import { Routes } from "discord-api-types/v10";
 import { pingCommand } from "./commands/ping.ts";
 import { spawnCommand } from "./commands/spawn.ts";
 import { spawnNowCommand } from "./commands/spawn-now.ts";
+import { statsCommand } from "./commands/stats.ts";
 import { Logger } from "./utils/logger.ts";
 
 const commands = [
   pingCommand.toJSON(),
   spawnCommand.toJSON(),
   spawnNowCommand.toJSON(),
+  statsCommand.toJSON(),
 ];
 
 const token = process.env.TOKEN;
@@ -29,7 +31,7 @@ const rest = new REST({ version: "10" }).setToken(token);
       body: commands,
     });
 
-    Logger.info("Đăng ký thành công các Slash Commands: ping, spawn, spawn-now.");
+    Logger.info("Đăng ký thành công các Slash Commands: ping, spawn, spawn-now, mosquito-stats.");
   } catch (error) {
     Logger.error("Lỗi khi đăng ký Slash Commands:", error);
   }

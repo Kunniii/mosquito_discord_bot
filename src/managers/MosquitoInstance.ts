@@ -128,6 +128,8 @@ export class MosquitoInstance {
           channelId: this.channel.id,
           guildId: this.guildId,
           adapterCreator: this.channel.guild.voiceAdapterCreator as unknown as DiscordGatewayAdapterCreator,
+          selfDeaf: false,
+          selfMute: false,
         });
       }
 
@@ -158,17 +160,22 @@ export class MosquitoInstance {
 
       this.connection.subscribe(this.player);
 
-      // Chờ cho đến khi Voice Connection đạt trạng thái Ready (tối đa 15 giây)
-      try {
-        await entersState(this.connection, VoiceConnectionStatus.Ready, 15_000);
-      } catch (err) {
-        Logger.error("Failed to connect to voice within 15 seconds", err, this.guildId);
-        this.disconnect();
-        return;
+      // Lắng nghe nếu đã Ready thì phát nhạc ngay, hoặc đợi nếu đang kết nối
+      if (this.connection.state.status === VoiceConnectionStatus.Ready) {
+        this.isVoiceConnected = true;
+        this.playAudio();
+      } else {
+        entersState(this.connection, VoiceConnectionStatus.Ready, 20_000)
+          .then(() => {
+            this.isVoiceConnected = true;
+            this.playAudio();
+          })
+          .catch((err) => {
+            Logger.warn("Voice did not reach Ready state quickly, attempting playback anyway:", this.guildId);
+            this.isVoiceConnected = true;
+            this.playAudio();
+          });
       }
-
-      this.isVoiceConnected = true;
-      this.playAudio();
     } catch (error) {
       Logger.error("Failed to connect or play audio", error, this.guildId);
       this.disconnect();

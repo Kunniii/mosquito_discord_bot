@@ -53,6 +53,7 @@ Nhằm mục đích theo dõi độ ổn định, hiệu năng kết nối tho�
 | `/spawn on <kênh_thoại>` | Bật dịch vụ muỗi vo ve cho kênh thoại chỉ định (hẹn giờ ngẫu nhiên 1-15p) | Thành viên server |
 | `/spawn-now [kênh_thoại]` | Triệu hồi muỗi bay vào phòng voice quấy rối ngay lập tức | Thành viên server |
 | `/spawn off` | Tắt dịch vụ muỗi và lập tức ngắt kết nối voice | Thành viên server |
+| `/mosquito-stats` | Xem bảng thành tích, số muỗi đã diệt và chuỗi streak đập muỗi của server | Không yêu cầu |
 | `/ping` | Kiểm tra độ trễ phản hồi của Bot | Không yêu cầu |
 
 ---
