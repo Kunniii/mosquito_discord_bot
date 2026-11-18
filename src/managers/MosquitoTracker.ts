@@ -78,6 +78,13 @@ export class MosquitoTracker {
     return `🦟 **Lêu lêu!** <@${userId}> đập hụt rồi nhé! Muỗi vẫn đang bay vo ve 😜`;
   }
 
+  public formatWrongRoomText(userId: string, currentChannelId?: string): string {
+    if (currentChannelId) {
+      return `🦟 **Hụt rồi!** <@${userId}> ơi, muỗi đang vo ve ở phòng <#${currentChannelId}> cơ mà! Cậu có ở cùng phòng đó đâu mà đòi đập! 😜`;
+    }
+    return `🦟 **Hụt rồi!** <@${userId}> ơi, cậu phải vào cùng phòng voice với muỗi thì mới đập được chứ! 😜`;
+  }
+
   public resetStreak(guildId: string) {
     const stat = this.getStats(guildId);
     stat.currentStreak = 0;

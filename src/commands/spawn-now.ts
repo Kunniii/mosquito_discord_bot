@@ -8,7 +8,7 @@ export const spawnNowCommand = new SlashCommandBuilder()
   .addChannelOption((option) =>
     option
       .setName("kênh_thoại")
-      .setDescription("Kênh thoại để muỗi quấy rối ngay (mặc định kênh bạn đang ở)")
+      .setDescription("Kênh thoại để muỗi quấy rối ngay (mặc định kênh bạn đang ở hoặc random phòng có người)")
       .setRequired(false)
   );
 
@@ -22,29 +22,38 @@ export async function execute(interaction: CommandInteraction) {
   }
 
   if (interaction.isChatInputCommand()) {
-    // Hoãn phản hồi (deferReply) ngay lập tức để tránh lỗi timeout 3 giây của Discord
     await interaction.deferReply();
 
     let channel = interaction.options.getChannel("kênh_thoại");
 
-    // Nếu không truyền option kênh_thoại, lấy kênh người dùng đang tham gia
+    // Nếu không truyền option kênh_thoại, kiểm tra xem người gọi lệnh có ở trong room voice nào không
     if (!channel) {
       const member = interaction.member as GuildMember;
-      if (member?.voice?.channel) {
+      if (member?.voice?.channel instanceof VoiceChannel) {
         channel = member.voice.channel;
       }
     }
 
-    if (!(channel instanceof VoiceChannel)) {
+    if (channel && !(channel instanceof VoiceChannel)) {
       await interaction.editReply({
-        content: "Vui lòng chọn một kênh Voice hoặc tự tham gia vào một Voice room trước! :face_holding_back_tears:",
+        content: "Kênh chỉ định phải là Voice room! :face_holding_back_tears:",
       });
       return;
     }
 
     const manager = GuildMosquitoManager.getInstance();
-    await manager.registerAndSpawnNow(channel);
+    const result = await manager.registerAndSpawnNow(
+      interaction.guild,
+      (channel as VoiceChannel) || undefined
+    );
 
-    await interaction.editReply(`🦟 **BZZZ!** Muỗi đã xuất hiện và bay thẳng vào phòng <#${channel.id}> ngay lập tức! :eyes:`);
+    if (!result.success || !result.channel) {
+      await interaction.editReply({
+        content: "❌ Không thể triệu hồi muỗi vì hiện tại không có phòng voice nào có người trong server! Hãy vào phòng voice trước nhé :eyes:",
+      });
+      return;
+    }
+
+    await interaction.editReply(`🦟 **BZZZ!** Muỗi đã xuất hiện và bay thẳng vào phòng <#${result.channel.id}> ngay lập tức! :eyes:`);
   }
 }

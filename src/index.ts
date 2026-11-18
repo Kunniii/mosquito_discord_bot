@@ -11,6 +11,7 @@ import { execute as executeStats } from "./commands/stats.ts";
 import { execute as executeDap } from "./commands/dap.ts";
 import { GuildMosquitoManager } from "./managers/GuildMosquitoManager.ts";
 import { MosquitoTracker } from "./managers/MosquitoTracker.ts";
+import { SlapResultType } from "./managers/MosquitoInstance.ts";
 import { Logger } from "./utils/logger.ts";
 
 const token = process.env.TOKEN;
@@ -94,10 +95,21 @@ client.on(Events.MessageCreate, async (message: Message) => {
 
     if (manager.isConnected(guildId)) {
       if (hasSlapKeyword) {
-        manager.slap(guildId, message.author.displayName);
-        tracker.recordSlap(guildId, message.author.id, message.author.displayName);
-        const replyText = tracker.formatSlapText(message.author.displayName, message.author.id, guildId);
-        await message.reply(replyText);
+        const member = message.member || (await message.guild.members.fetch(message.author.id).catch(() => null));
+        const userVoiceChannelId = member?.voice?.channelId;
+
+        const result = manager.slap(guildId, message.author.displayName, userVoiceChannelId);
+
+        if (result.type === SlapResultType.SUCCESS) {
+          tracker.recordSlap(guildId, message.author.id, message.author.displayName);
+          const replyText = tracker.formatSlapText(message.author.displayName, message.author.id, guildId);
+          await message.reply(replyText);
+        } else if (result.type === SlapResultType.WRONG_ROOM) {
+          const wrongRoomText = tracker.formatWrongRoomText(message.author.id, result.currentChannelId);
+          await message.reply(wrongRoomText);
+        } else {
+          await message.reply("# :mosquito:\n## Muỗi chưa bay vào phòng voice nào á cậu, từ từ =))");
+        }
       } else {
         const failText = tracker.formatFailText(message.author.id);
         await message.reply(failText);
@@ -110,15 +122,34 @@ client.on(Events.MessageCreate, async (message: Message) => {
   }
 });
 
-// Lắng nghe Voice State để tự động xử lý khi Bot bị ngắt kết nối
+// Lắng nghe Voice State để tự động xử lý khi Bot bị ngắt kết nối hoặc phòng voice hết người
 client.on(Events.VoiceStateUpdate, (oldState, newState) => {
+  const guildId = oldState.guild.id;
+  const mosquito = manager.get(guildId);
+
   // Nếu bot rời phòng voice (bị kick hoặc disconnect)
   if (oldState.member?.id === client.user?.id && !newState.channelId) {
-    const guildId = oldState.guild.id;
-    const mosquito = manager.get(guildId);
     if (mosquito && mosquito.isVoiceConnected) {
       Logger.info("Bot bị ngắt kết nối khỏi voice channel bởi server.", guildId);
       mosquito.handleDisconnect();
+    }
+    return;
+  }
+
+  // Nếu mọi người trong phòng thoại của muỗi đều rời đi
+  if (mosquito && mosquito.isVoiceConnected && mosquito.currentChannel) {
+    if (oldState.channelId === mosquito.currentChannel.id) {
+      const nonBotMembers = mosquito.currentChannel.members.filter((m) => !m.user.bot);
+      if (nonBotMembers.size === 0) {
+        Logger.info(
+          `Tất cả thành viên đã rời phòng ${mosquito.currentChannel.name}. Muỗi rời phòng và lên lịch bay tiếp.`,
+          guildId
+        );
+        mosquito.disconnect();
+        if (mosquito.isEnabled) {
+          mosquito.scheduleNextSpawn();
+        }
+      }
     }
   }
 });

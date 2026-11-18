@@ -35,11 +35,14 @@ Nhằm mục đích theo dõi độ ổn định, hiệu năng kết nối tho�
 
 - **🌐 Hỗ trợ đa máy chủ (Multi-Guild Scalability):** Tách biệt và cách ly trạng thái hoàn toàn giữa các server (`Map<guildId, MosquitoInstance>`).
 - **🦟 Dịch vụ muỗi vo ve (`/spawn`):**
-  - **Hẹn giờ ngẫu nhiên:** Muỗi tự động bay vào phòng thoại mục tiêu sau khoảng thời gian ngẫu nhiên từ 1 đến 15 phút.
-  - **Cảm biến phòng thoại thông minh:** Kiểm tra xem phòng có người thật (không tính bot) hay không trước khi join. Nếu phòng trống, bot sẽ tự dời lịch hẹn tiếp theo.
+  - **Rình rập toàn Server & Random Voice Room:** Muỗi tự động tìm kiếm và **ngẫu nhiên bay vào bất kỳ phòng voice nào đang có người** trong server sau khoảng thời gian ngẫu nhiên từ 1 đến 15 phút.
+  - **Tùy chọn cố định kênh:** Bạn vẫn có thể chỉ định cố định 1 kênh thoại mục tiêu nếu muốn.
+  - **Cảm biến phòng thoại thông minh:** Chỉ chọn các phòng có người thật (không tính bot). Nếu phòng voice hết người hoặc mọi người bỏ chạy, muỗi sẽ tự động rời đi và lên lịch săn phòng khác.
   - **Lặp âm thanh liên tục:** Phát lặp vô tận âm thanh muỗi vo ve (`src/assets/sound.mp3`) qua `@discordjs/voice`.
-- **👏 Cơ chế "Đập muỗi" (Slap/Kill):**
-  - Khi muỗi đang trong phòng thoại, chỉ cần tag bot `@MosquitoBot` kèm các từ khóa (`dap`, `đập`, `slap`, `hit`, `kill`, `👏`, `cmm`, ...), bot sẽ bị "đập chết" và văng khỏi kênh thoại ngay lập tức, đồng thời bắt đầu đếm ngược đợt tái sinh kế tiếp.
+- **👏 Cơ chế "Đập muỗi" (Chỉ người cùng phòng mới đập được):**
+  - **Chỉ thành viên đang ở CÙNG Voice Room với muỗi mới có thể đập!** Nếu bạn ở phòng voice khác hoặc không ở trong voice, bot sẽ trêu chọc và từ chối.
+  - Hỗ trợ cả Slash Command (`/dap`, `/slap`) lẫn Chat (`!dap`, `!slap`, `dap muoi`, `@MosquitoBot đập`, ...).
+  - Phản hồi dạng text-only gọn gàng và tự động theo dõi chuỗi Streak cá nhân.
 - **⚡ Chạy Native TypeScript trên Node.js v24+:**
   - Không cần build/bundle trung gian, không cần `ts-node`, đã loại bỏ hoàn toàn Bun.
   - Chạy trực tiếp mã nguồn TypeScript với tính năng Type Stripping có sẵn trên Node.js v24.

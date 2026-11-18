@@ -1,5 +1,5 @@
 import type { DiscordGatewayAdapterCreator } from "@discordjs/voice";
-import { VoiceChannel } from "discord.js";
+import { Guild, VoiceChannel } from "discord.js";
 import {
   joinVoiceChannel,
   createAudioPlayer,
@@ -25,9 +25,24 @@ export interface MosquitoConfig {
   soundPath: string;
 }
 
+export const SlapResultType = {
+  SUCCESS: "SUCCESS",
+  WRONG_ROOM: "WRONG_ROOM",
+  NOT_CONNECTED: "NOT_CONNECTED",
+} as const;
+
+export type SlapResultType = (typeof SlapResultType)[keyof typeof SlapResultType];
+
+export interface SlapResult {
+  type: SlapResultType;
+  currentChannelId?: string;
+}
+
 export class MosquitoInstance {
+  public guild: Guild;
   public guildId: string;
-  public channel: VoiceChannel;
+  public targetChannel: VoiceChannel | undefined;
+  public currentChannel: VoiceChannel | undefined;
   public soundPath: string;
   public isEnabled = false;
   public isVoiceConnected = false;
@@ -38,16 +53,46 @@ export class MosquitoInstance {
   private minMinutes: number;
   private maxMinutes: number;
 
-  constructor(channel: VoiceChannel, config: Partial<MosquitoConfig> = {}) {
-    this.guildId = channel.guild.id;
-    this.channel = channel;
+  constructor(guild: Guild, targetChannel?: VoiceChannel, config: Partial<MosquitoConfig> = {}) {
+    this.guild = guild;
+    this.guildId = guild.id;
+    this.targetChannel = targetChannel;
     this.minMinutes = config.minMinutes ?? 1;
     this.maxMinutes = config.maxMinutes ?? 15;
     this.soundPath = config.soundPath ?? path.resolve(__dirname, "../assets/sound.mp3");
   }
 
-  public updateChannel(channel: VoiceChannel) {
-    this.channel = channel;
+  public updateTarget(guild: Guild, targetChannel?: VoiceChannel) {
+    this.guild = guild;
+    this.targetChannel = targetChannel;
+  }
+
+  public getActiveVoiceChannels(): VoiceChannel[] {
+    const channels: VoiceChannel[] = [];
+    for (const ch of this.guild.channels.cache.values()) {
+      if (ch instanceof VoiceChannel) {
+        const humanCount = ch.members.filter((m) => !m.user.bot).size;
+        if (humanCount > 0 && ch.joinable) {
+          channels.push(ch);
+        }
+      }
+    }
+    return channels;
+  }
+
+  public pickTargetChannel(): VoiceChannel | undefined {
+    if (this.targetChannel) {
+      const humanCount = this.targetChannel.members.filter((m) => !m.user.bot).size;
+      if (humanCount > 0 && this.targetChannel.joinable) {
+        return this.targetChannel;
+      }
+      return undefined;
+    }
+
+    const active = this.getActiveVoiceChannels();
+    if (active.length === 0) return undefined;
+    const randomIndex = Math.floor(Math.random() * active.length);
+    return active[randomIndex];
   }
 
   public start() {
@@ -56,11 +101,11 @@ export class MosquitoInstance {
     this.scheduleNextSpawn();
   }
 
-  public async spawnNow() {
+  public async spawnNow(channel?: VoiceChannel): Promise<boolean> {
     this.isEnabled = true;
     this.clearSpawnTimer();
     Logger.info("Forcing mosquito to spawn immediately (spawn-now).", this.guildId);
-    await this.connect();
+    return await this.connect(channel);
   }
 
   public stop() {
@@ -70,19 +115,39 @@ export class MosquitoInstance {
     Logger.info("Mosquito service stopped and disconnected.", this.guildId);
   }
 
-  public slap(slappedBy: string): boolean {
+  public getCurrentVoiceChannelId(): string | undefined {
+    return this.currentChannel?.id || this.connection?.joinConfig?.channelId || undefined;
+  }
+
+  public slap(slappedBy: string, memberVoiceChannelId?: string | null): SlapResult {
     const existing = getVoiceConnection(this.guildId);
+    const currentChannelId = this.getCurrentVoiceChannelId();
+
     if (!this.isVoiceConnected && !this.connection && !existing) {
-      return false;
+      return { type: SlapResultType.NOT_CONNECTED };
     }
 
-    Logger.info(`Mosquito slapped by ${slappedBy}`, this.guildId);
+    if (!memberVoiceChannelId || memberVoiceChannelId !== currentChannelId) {
+      Logger.info(
+        `Slap by ${slappedBy} rejected: user is in ${memberVoiceChannelId}, mosquito is in ${currentChannelId}`,
+        this.guildId
+      );
+      return {
+        type: SlapResultType.WRONG_ROOM,
+        currentChannelId,
+      };
+    }
+
+    Logger.info(`Mosquito slapped by ${slappedBy} in room ${currentChannelId}`, this.guildId);
     this.disconnect();
 
     if (this.isEnabled) {
       this.scheduleNextSpawn();
     }
-    return true;
+    return {
+      type: SlapResultType.SUCCESS,
+      currentChannelId,
+    };
   }
 
   private clearSpawnTimer() {
@@ -96,7 +161,7 @@ export class MosquitoInstance {
     return Math.floor(Math.random() * (this.maxMinutes - this.minMinutes)) + this.minMinutes;
   }
 
-  private scheduleNextSpawn() {
+  public scheduleNextSpawn() {
     this.clearSpawnTimer();
     if (!this.isEnabled) return;
 
@@ -106,36 +171,38 @@ export class MosquitoInstance {
     this.timer = setTimeout(async () => {
       if (!this.isEnabled) return;
 
-      if (this.hasActiveUsers()) {
-        await this.connect();
+      const target = this.pickTargetChannel();
+      if (target) {
+        await this.connect(target);
       } else {
-        Logger.info("Voice channel is empty. Rescheduling spawn...", this.guildId);
+        Logger.info("No active voice channels with users. Rescheduling spawn...", this.guildId);
         this.scheduleNextSpawn();
       }
     }, delayMinutes * 60 * 1000);
   }
 
-  public hasActiveUsers(): boolean {
-    const nonBotMembers = this.channel.members.filter((m) => !m.user.bot);
-    return nonBotMembers.size > 0;
-  }
-
-  public async connect() {
+  public async connect(target?: VoiceChannel): Promise<boolean> {
     try {
+      const channelToJoin = target || this.pickTargetChannel();
+      if (!channelToJoin) {
+        Logger.info("Cannot connect: no eligible voice channel found with users", this.guildId);
+        return false;
+      }
+
+      this.currentChannel = channelToJoin;
       this.connection = getVoiceConnection(this.guildId);
 
-      if (!this.connection) {
-        Logger.info(`Connecting to voice channel: ${this.channel.name} (${this.channel.id})`, this.guildId);
+      if (!this.connection || this.connection.joinConfig.channelId !== channelToJoin.id) {
+        Logger.info(`Connecting to voice channel: ${channelToJoin.name} (${channelToJoin.id})`, this.guildId);
         this.connection = joinVoiceChannel({
-          channelId: this.channel.id,
+          channelId: channelToJoin.id,
           guildId: this.guildId,
-          adapterCreator: this.channel.guild.voiceAdapterCreator as unknown as DiscordGatewayAdapterCreator,
+          adapterCreator: this.guild.voiceAdapterCreator as unknown as DiscordGatewayAdapterCreator,
           selfDeaf: false,
           selfMute: false,
         });
       }
 
-      // Đánh dấu muỗi đã vào phòng thoại
       this.isVoiceConnected = true;
 
       if (!this.player) {
@@ -162,7 +229,6 @@ export class MosquitoInstance {
 
       this.connection.subscribe(this.player);
 
-      // Nếu đã Ready thì phát nhạc ngay, nếu chưa thì đợi và phát
       if (this.connection.state.status === VoiceConnectionStatus.Ready) {
         this.playAudio();
       } else {
@@ -175,9 +241,12 @@ export class MosquitoInstance {
             this.playAudio();
           });
       }
+
+      return true;
     } catch (error) {
       Logger.error("Failed to connect or play audio", error, this.guildId);
       this.disconnect();
+      return false;
     }
   }
 
@@ -200,6 +269,7 @@ export class MosquitoInstance {
 
   public handleDisconnect() {
     this.isVoiceConnected = false;
+    this.currentChannel = undefined;
     if (this.player) {
       this.player.stop();
       this.player = undefined;
