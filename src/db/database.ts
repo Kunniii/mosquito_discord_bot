@@ -12,8 +12,10 @@ if (!fs.existsSync(dbDir)) {
 
 export const db = new DatabaseSync(dbPath);
 
-// Bật WAL mode để đọc/ghi nhanh và ổn định hơn
+// Bật WAL mode và busy_timeout để tránh lỗi lock DB khi nhiều tiến trình (bot + website) cùng truy cập
 db.exec("PRAGMA journal_mode = WAL;");
+db.exec("PRAGMA busy_timeout = 5000;");
+db.exec("PRAGMA synchronous = NORMAL;");
 
 // Khởi tạo schema bảng nếu chưa có
 db.exec(`

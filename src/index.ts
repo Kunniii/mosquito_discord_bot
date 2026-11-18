@@ -161,3 +161,13 @@ client.on(Events.VoiceStateUpdate, (oldState, newState) => {
 });
 
 client.login(token);
+
+// Đảm bảo ghi hết batch SQLite trước khi tắt bot
+const gracefulShutdown = () => {
+  Logger.info("Shutting down... Flushing remaining stats batch to SQLite.");
+  MosquitoTracker.getInstance().flushBatch();
+  process.exit(0);
+};
+
+process.on("SIGINT", gracefulShutdown);
+process.on("SIGTERM", gracefulShutdown);
