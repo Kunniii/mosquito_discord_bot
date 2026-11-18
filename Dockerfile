@@ -25,6 +25,9 @@ RUN npm run typecheck
 # Dọn dẹp devDependencies để giảm kích thước image
 RUN npm prune --omit=dev
 
+# Tạo thư mục chứa SQLite database và phân quyền cho user node
+RUN mkdir -p /app/data && chown -R node:node /app/data
+
 # Chạy bot dưới user node bảo mật
 USER node
 

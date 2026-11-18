@@ -1,4 +1,5 @@
 import { EmbedBuilder } from "discord.js";
+import { db } from "../db/database.ts";
 
 export interface GuildMosquitoStats {
   totalSlaps: number;
@@ -6,14 +7,53 @@ export interface GuildMosquitoStats {
   highestStreak: number;
   lastSlappedBy?: string;
   lastSlappedUserId?: string;
-  userSlapCounts: Record<string, number>;
-  userStreaks: Record<string, number>;
-  userHighestStreaks: Record<string, number>;
+}
+
+interface GuildStatsRow {
+  guild_id: string;
+  total_slaps: number;
+  current_streak: number;
+  highest_streak: number;
+  last_slapped_by: string | null;
+  last_slapped_user_id: string | null;
+}
+
+interface UserStatsRow {
+  user_id: string;
+  display_name: string;
+  slap_count: number;
+  current_streak: number;
+  highest_streak: number;
 }
 
 export class MosquitoTracker {
   private static instance: MosquitoTracker;
-  private stats = new Map<string, GuildMosquitoStats>();
+
+  private stmtGetGuild = db.prepare("SELECT * FROM guild_stats WHERE guild_id = ?");
+  private stmtGetUser = db.prepare("SELECT * FROM user_stats WHERE guild_id = ? AND user_id = ?");
+  private stmtUpsertGuild = db.prepare(`
+    INSERT INTO guild_stats (guild_id, total_slaps, current_streak, highest_streak, last_slapped_by, last_slapped_user_id)
+    VALUES (?, 1, 1, 1, ?, ?)
+    ON CONFLICT(guild_id) DO UPDATE SET
+      total_slaps = total_slaps + 1,
+      current_streak = current_streak + 1,
+      highest_streak = MAX(highest_streak, current_streak + 1),
+      last_slapped_by = excluded.last_slapped_by,
+      last_slapped_user_id = excluded.last_slapped_user_id
+  `);
+  private stmtUpsertUser = db.prepare(`
+    INSERT INTO user_stats (guild_id, user_id, display_name, slap_count, current_streak, highest_streak)
+    VALUES (?, ?, ?, 1, 1, 1)
+    ON CONFLICT(guild_id, user_id) DO UPDATE SET
+      display_name = excluded.display_name,
+      slap_count = slap_count + 1,
+      current_streak = current_streak + 1,
+      highest_streak = MAX(highest_streak, current_streak + 1)
+  `);
+  private stmtResetStreak = db.prepare("UPDATE guild_stats SET current_streak = 0 WHERE guild_id = ?");
+  private stmtTopUsers = db.prepare(
+    "SELECT user_id, display_name, slap_count, current_streak, highest_streak FROM user_stats WHERE guild_id = ? ORDER BY slap_count DESC LIMIT 10"
+  );
 
   private constructor() {}
 
@@ -25,51 +65,56 @@ export class MosquitoTracker {
   }
 
   public getStats(guildId: string): GuildMosquitoStats {
-    let stat = this.stats.get(guildId);
-    if (!stat) {
-      stat = {
+    const row = this.stmtGetGuild.get(guildId) as unknown as GuildStatsRow | undefined;
+    if (!row) {
+      return {
         totalSlaps: 0,
         currentStreak: 0,
         highestStreak: 0,
-        userSlapCounts: {},
-        userStreaks: {},
-        userHighestStreaks: {},
       };
-      this.stats.set(guildId, stat);
     }
-    return stat;
+    return {
+      totalSlaps: row.total_slaps,
+      currentStreak: row.current_streak,
+      highestStreak: row.highest_streak,
+      lastSlappedBy: row.last_slapped_by ?? undefined,
+      lastSlappedUserId: row.last_slapped_user_id ?? undefined,
+    };
   }
 
-  public recordSlap(guildId: string, userId: string, displayName: string): { stats: GuildMosquitoStats; userStreak: number; userTotal: number } {
-    const stat = this.getStats(guildId);
+  public getUserStats(guildId: string, userId: string): UserStatsRow | undefined {
+    return this.stmtGetUser.get(guildId, userId) as unknown as UserStatsRow | undefined;
+  }
 
-    stat.totalSlaps += 1;
-    stat.currentStreak += 1;
-    if (stat.currentStreak > stat.highestStreak) {
-      stat.highestStreak = stat.currentStreak;
+  public recordSlap(
+    guildId: string,
+    userId: string,
+    displayName: string
+  ): { stats: GuildMosquitoStats; userStreak: number; userTotal: number } {
+    db.exec("BEGIN");
+    try {
+      this.stmtUpsertGuild.run(guildId, displayName, userId);
+      this.stmtUpsertUser.run(guildId, userId, displayName);
+      db.exec("COMMIT");
+    } catch (err) {
+      db.exec("ROLLBACK");
+      throw err;
     }
 
-    stat.lastSlappedBy = displayName;
-    stat.lastSlappedUserId = userId;
-
-    // Cập nhật thống kê cá nhân của người dùng
-    stat.userSlapCounts[userId] = (stat.userSlapCounts[userId] || 0) + 1;
-    stat.userStreaks[userId] = (stat.userStreaks[userId] || 0) + 1;
-    if (stat.userStreaks[userId] > (stat.userHighestStreaks[userId] || 0)) {
-      stat.userHighestStreaks[userId] = stat.userStreaks[userId];
-    }
+    const stats = this.getStats(guildId);
+    const userRow = this.getUserStats(guildId, userId);
 
     return {
-      stats: stat,
-      userStreak: stat.userStreaks[userId],
-      userTotal: stat.userSlapCounts[userId],
+      stats,
+      userStreak: userRow?.current_streak ?? 1,
+      userTotal: userRow?.slap_count ?? 1,
     };
   }
 
   public formatSlapText(displayName: string, userId: string, guildId: string): string {
-    const stat = this.getStats(guildId);
-    const userStreak = stat.userStreaks[userId] || 1;
-    const userTotal = stat.userSlapCounts[userId] || 1;
+    const userRow = this.getUserStats(guildId, userId);
+    const userStreak = userRow?.current_streak ?? 1;
+    const userTotal = userRow?.slap_count ?? 1;
 
     return `💥 **BỐP!** <@${userId}> vừa đập nát con muỗi! 🦟🪦 | 🔥 **Streak của bạn:** ${userStreak} liên tiếp *(Tổng diệt: ${userTotal} con)*`;
   }
@@ -86,48 +131,7 @@ export class MosquitoTracker {
   }
 
   public resetStreak(guildId: string) {
-    const stat = this.getStats(guildId);
-    stat.currentStreak = 0;
-  }
-
-  public createSlapEmbed(displayName: string, userAvatarUrl: string | null, stats: GuildMosquitoStats): EmbedBuilder {
-    const streakTitle = stats.currentStreak > 1 ? ` 🔥 Chuỗi đập: ${stats.currentStreak} lần liên tiếp!` : "";
-    
-    // GIF "The Beast - I'm beasting it" siêu ngầu
-    const beastGif = "https://media.tenor.com/oT_tiSLfRGUAAAAC/the-beast-im-beasting-it.gif";
-
-    return new EmbedBuilder()
-      .setColor(0xff3366) // Màu hồng đỏ nổi bật
-      .setTitle(`💥 BỐP! Con muỗi đã bị đập nát! ${streakTitle}`)
-      .setDescription(
-        `Dũng sĩ **${displayName}** vừa hoá quái thú tung đòn sấm sét tiêu diệt con muỗi! 🦟🪦\n*“I’M BEASTING IT!”* 🔥`
-      )
-      .addFields(
-        { name: "⚡ Chuỗi (Streak)", value: `**${stats.currentStreak}** lần`, inline: true },
-        { name: "👑 Kỷ lục", value: `**${stats.highestStreak}** lần`, inline: true },
-        { name: "☠️ Đã diệt", value: `**${stats.totalSlaps}** con`, inline: true }
-      )
-      .setImage(beastGif)
-      .setThumbnail(userAvatarUrl || "https://cdn-icons-png.flaticon.com/512/2822/2822506.png")
-      .setFooter({
-        text: "Mosquito Slayer • The Beast • Muỗi sẽ tái sinh sau ít phút...",
-      })
-      .setTimestamp();
-  }
-
-  public createFailEmbed(displayName: string, userAvatarUrl: string | null): EmbedBuilder {
-    return new EmbedBuilder()
-      .setColor(0xf1c40f) // Màu vàng trêu ngươi
-      .setTitle("🦟 Lêu lêu! Đập hụt rồi nhé!")
-      .setDescription(
-        `Cậu **${displayName}** vừa đập hụt con muỗi rồi! Nó vẫn đang bay vo ve lượn lờ chọc tức cậu đó 😜`
-      )
-      .addFields({
-        name: "💡 Mẹo đập muỗi:",
-        value: "Tag bot kèm các từ khóa chuẩn: `đập`, `dap`, `slap`, `hit`, `kill`, `👏`",
-      })
-      .setThumbnail(userAvatarUrl || "https://cdn-icons-png.flaticon.com/512/2822/2822506.png")
-      .setFooter({ text: "Mosquito Tracker • Thử lại đi nào!" });
+    this.stmtResetStreak.run(guildId);
   }
 
   public createStatsEmbed(stats: GuildMosquitoStats, guildName: string): EmbedBuilder {
@@ -136,26 +140,23 @@ export class MosquitoTracker {
       .setTitle(`🦟 Thống kê Diệt Muỗi: ${guildName}`)
       .setDescription(
         `⚡ Chuỗi: **${stats.currentStreak}** (Kỷ lục: **${stats.highestStreak}**)\n` +
-        `☠️ Đã diệt: **${stats.totalSlaps}** con | 🎯 Gần nhất: **${stats.lastSlappedBy || "Chưa có"}**`
+          `☠️ Đã diệt: **${stats.totalSlaps}** con | 🎯 Gần nhất: **${stats.lastSlappedBy || "Chưa có"}**`
       );
   }
 
   public createLeaderboardEmbed(guildId: string, guildName: string): EmbedBuilder {
     const stat = this.getStats(guildId);
-    const entries = Object.entries(stat.userSlapCounts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 10);
+    const rows = this.stmtTopUsers.all(guildId) as unknown as UserStatsRow[];
 
     let description = "";
-    if (entries.length === 0) {
+    if (rows.length === 0) {
       description = "Chưa có ai đập được con muỗi nào trong server này! 🦟";
     } else {
       const medals = ["🥇", "🥈", "🥉"];
-      description = entries
-        .map(([userId, count], idx) => {
+      description = rows
+        .map((row, idx) => {
           const rank = medals[idx] ?? `**#${idx + 1}**`;
-          const streak = stat.userStreaks[userId] || 0;
-          return `${rank} <@${userId}> — **${count}** con *(Streak: ${streak})*`;
+          return `${rank} <@${row.user_id}> — **${row.slap_count}** con *(Streak: ${row.current_streak})*`;
         })
         .join("\n");
     }

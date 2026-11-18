@@ -3,6 +3,7 @@ npm-debug.log
 .git
 .gitignore
 .env
+data
 AUDIT_REPORT.md
 .agents
 .vscode
