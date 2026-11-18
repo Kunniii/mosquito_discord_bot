@@ -139,4 +139,31 @@ export class MosquitoTracker {
         `☠️ Đã diệt: **${stats.totalSlaps}** con | 🎯 Gần nhất: **${stats.lastSlappedBy || "Chưa có"}**`
       );
   }
+
+  public createLeaderboardEmbed(guildId: string, guildName: string): EmbedBuilder {
+    const stat = this.getStats(guildId);
+    const entries = Object.entries(stat.userSlapCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10);
+
+    let description = "";
+    if (entries.length === 0) {
+      description = "Chưa có ai đập được con muỗi nào trong server này! 🦟";
+    } else {
+      const medals = ["🥇", "🥈", "🥉"];
+      description = entries
+        .map(([userId, count], idx) => {
+          const rank = medals[idx] ?? `**#${idx + 1}**`;
+          const streak = stat.userStreaks[userId] || 0;
+          return `${rank} <@${userId}> — **${count}** con *(Streak: ${streak})*`;
+        })
+        .join("\n");
+    }
+
+    return new EmbedBuilder()
+      .setColor(0xffaa00)
+      .setTitle(`🏆 Bảng Xếp Hạng Diệt Muỗi — ${guildName}`)
+      .setDescription(description)
+      .setFooter({ text: `Tổng cộng toàn server đã diệt: ${stat.totalSlaps} con muỗi` });
+  }
 }

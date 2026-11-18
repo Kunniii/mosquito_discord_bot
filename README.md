@@ -58,6 +58,8 @@ Nhằm mục đích theo dõi độ ổn định, hiệu năng kết nối tho�
 | `/spawn-now [kênh_thoại]` | Triệu hồi muỗi bay vào phòng voice quấy rối ngay lập tức | Thành viên server |
 | `/spawn off` | Tắt dịch vụ muỗi và lập tức ngắt kết nối voice | Thành viên server |
 | `/mosquito-stats` | Xem bảng thành tích, số muỗi đã diệt và chuỗi streak đập muỗi của server | Không yêu cầu |
+| `/leaderboard` | Xem top 10 thợ săn muỗi có thành tích cao nhất server | Không yêu cầu |
+| `/help` | Xem hướng dẫn sử dụng và danh sách tất cả lệnh của Bot | Không yêu cầu |
 | `/ping` | Kiểm tra độ trễ phản hồi của Bot | Không yêu cầu |
 
 ---
