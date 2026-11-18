@@ -28,8 +28,10 @@ export async function execute(interaction: CommandInteraction) {
           "• Hoặc tag `@Mosquito` kèm từ khóa (`đập`, `slap`, `hit`, `kill`, `cút`, `👏`, ...).",
       },
       {
-        name: "📊 Thống kê & Xếp hạng",
+        name: "📊 Thống kê, Cấu hình & Xếp hạng",
         value:
+          "• `/blacklist add|remove|clear|list` — Cấm muỗi bay vào các phòng voice chỉ định.\n" +
+          "• `/show-config` — Xem trạng thái, chế độ và danh sách blacklist của server.\n" +
           "• `/mosquito-stats` — Xem tổng số muỗi đã diệt và chuỗi streak.\n" +
           "• `/leaderboard` — Xem top 10 thợ săn muỗi của server.\n" +
           "• `/ping` — Kiểm tra độ trễ của Bot.",

@@ -7,6 +7,8 @@ import { statsCommand } from "./commands/stats.ts";
 import { dapCommand, slapCommand } from "./commands/dap.ts";
 import { helpCommand } from "./commands/help.ts";
 import { leaderboardCommand } from "./commands/leaderboard.ts";
+import { blacklistCommand } from "./commands/blacklist.ts";
+import { showConfigCommand } from "./commands/show-config.ts";
 import { Logger } from "./utils/logger.ts";
 
 const commands = [
@@ -18,6 +20,8 @@ const commands = [
   slapCommand.toJSON(),
   helpCommand.toJSON(),
   leaderboardCommand.toJSON(),
+  blacklistCommand.toJSON(),
+  showConfigCommand.toJSON(),
 ];
 
 const token = process.env.TOKEN;
@@ -38,7 +42,7 @@ const rest = new REST({ version: "10" }).setToken(token);
       body: commands,
     });
 
-    Logger.info("Đăng ký thành công các Slash Commands: ping, spawn, spawn-now, mosquito-stats, dap, slap, help, leaderboard.");
+    Logger.info("Đăng ký thành công các Slash Commands: ping, spawn, spawn-now, mosquito-stats, dap, slap, help, leaderboard, blacklist, show-config.");
   } catch (error) {
     Logger.error("Lỗi khi đăng ký Slash Commands:", error);
   }

@@ -15,6 +15,7 @@ import {
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import { Logger } from "../utils/logger.ts";
+import { BlacklistManager } from "./BlacklistManager.ts";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -68,9 +69,11 @@ export class MosquitoInstance {
   }
 
   public getActiveVoiceChannels(): VoiceChannel[] {
+    const blacklist = BlacklistManager.getInstance();
     const channels: VoiceChannel[] = [];
     for (const ch of this.guild.channels.cache.values()) {
       if (ch instanceof VoiceChannel) {
+        if (blacklist.isBlacklisted(this.guildId, ch.id)) continue;
         const humanCount = ch.members.filter((m) => !m.user.bot).size;
         if (humanCount > 0 && ch.joinable) {
           channels.push(ch);
@@ -81,7 +84,11 @@ export class MosquitoInstance {
   }
 
   public pickTargetChannel(): VoiceChannel | undefined {
+    const blacklist = BlacklistManager.getInstance();
     if (this.targetChannel) {
+      if (blacklist.isBlacklisted(this.guildId, this.targetChannel.id)) {
+        return undefined;
+      }
       const humanCount = this.targetChannel.members.filter((m) => !m.user.bot).size;
       if (humanCount > 0 && this.targetChannel.joinable) {
         return this.targetChannel;
@@ -186,6 +193,11 @@ export class MosquitoInstance {
       const channelToJoin = target || this.pickTargetChannel();
       if (!channelToJoin) {
         Logger.info("Cannot connect: no eligible voice channel found with users", this.guildId);
+        return false;
+      }
+
+      if (BlacklistManager.getInstance().isBlacklisted(this.guildId, channelToJoin.id)) {
+        Logger.info(`Skipped blacklisted voice channel: ${channelToJoin.name} (${channelToJoin.id})`, this.guildId);
         return false;
       }
 

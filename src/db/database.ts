@@ -45,6 +45,12 @@ db.exec(`
     last_slapped_by TEXT
   );
 
+  CREATE TABLE IF NOT EXISTS blacklisted_channels (
+    guild_id TEXT NOT NULL,
+    channel_id TEXT NOT NULL,
+    PRIMARY KEY (guild_id, channel_id)
+  );
+
   INSERT OR IGNORE INTO global_stats (id, total_slaps) VALUES (1, 0);
 `);
 

@@ -11,6 +11,8 @@ import { execute as executeStats } from "./commands/stats.ts";
 import { execute as executeDap } from "./commands/dap.ts";
 import { execute as executeHelp } from "./commands/help.ts";
 import { execute as executeLeaderboard } from "./commands/leaderboard.ts";
+import { execute as executeBlacklist } from "./commands/blacklist.ts";
+import { execute as executeShowConfig } from "./commands/show-config.ts";
 import { GuildMosquitoManager } from "./managers/GuildMosquitoManager.ts";
 import { MosquitoTracker } from "./managers/MosquitoTracker.ts";
 import { SlapResultType } from "./managers/MosquitoInstance.ts";
@@ -58,6 +60,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
       await executeHelp(interaction);
     } else if (commandName === "leaderboard") {
       await executeLeaderboard(interaction);
+    } else if (commandName === "blacklist") {
+      await executeBlacklist(interaction);
+    } else if (commandName === "show-config") {
+      await executeShowConfig(interaction);
     }
   } catch (error) {
     Logger.error(`Lỗi khi thực thi lệnh /${commandName}:`, error, interaction.guildId ?? undefined);

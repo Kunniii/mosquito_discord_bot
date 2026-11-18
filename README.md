@@ -59,6 +59,8 @@ Nhằm mục đích theo dõi độ ổn định, hiệu năng kết nối tho�
 | `/spawn off` | Tắt dịch vụ muỗi và lập tức ngắt kết nối voice | Thành viên server |
 | `/mosquito-stats` | Xem bảng thành tích, số muỗi đã diệt và chuỗi streak đập muỗi của server | Không yêu cầu |
 | `/leaderboard` | Xem top 10 thợ săn muỗi có thành tích cao nhất server | Không yêu cầu |
+| `/blacklist <add\|remove\|clear\|list>` | Quản lý danh sách phòng voice cấm muỗi bay vào | Quyền `Manage Channels` |
+| `/show-config` | Xem cấu hình, trạng thái hoạt động và danh sách blacklist của server | Không yêu cầu |
 | `/help` | Xem hướng dẫn sử dụng và danh sách tất cả lệnh của Bot | Không yêu cầu |
 | `/ping` | Kiểm tra độ trễ phản hồi của Bot | Không yêu cầu |
 
