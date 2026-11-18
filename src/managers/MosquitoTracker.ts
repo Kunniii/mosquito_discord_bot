@@ -9,6 +9,19 @@ export interface GuildMosquitoStats {
   lastSlappedUserId?: string;
 }
 
+export interface GlobalMosquitoStats {
+  totalSlaps: number;
+  lastSlappedAt?: string;
+  lastSlappedBy?: string;
+}
+
+interface GlobalStatsRow {
+  id: number;
+  total_slaps: number;
+  last_slapped_at: string | null;
+  last_slapped_by: string | null;
+}
+
 interface GuildStatsRow {
   guild_id: string;
   total_slaps: number;
@@ -54,6 +67,14 @@ export class MosquitoTracker {
   private stmtTopUsers = db.prepare(
     "SELECT user_id, display_name, slap_count, current_streak, highest_streak FROM user_stats WHERE guild_id = ? ORDER BY slap_count DESC LIMIT 10"
   );
+  private stmtGetGlobal = db.prepare("SELECT * FROM global_stats WHERE id = 1");
+  private stmtUpdateGlobal = db.prepare(`
+    UPDATE global_stats
+    SET total_slaps = total_slaps + 1,
+        last_slapped_at = ?,
+        last_slapped_by = ?
+    WHERE id = 1
+  `);
 
   private constructor() {}
 
@@ -86,15 +107,29 @@ export class MosquitoTracker {
     return this.stmtGetUser.get(guildId, userId) as unknown as UserStatsRow | undefined;
   }
 
+  public getGlobalStats(): GlobalMosquitoStats {
+    const row = this.stmtGetGlobal.get() as unknown as GlobalStatsRow | undefined;
+    if (!row) {
+      return { totalSlaps: 0 };
+    }
+    return {
+      totalSlaps: row.total_slaps,
+      lastSlappedAt: row.last_slapped_at ?? undefined,
+      lastSlappedBy: row.last_slapped_by ?? undefined,
+    };
+  }
+
   public recordSlap(
     guildId: string,
     userId: string,
     displayName: string
   ): { stats: GuildMosquitoStats; userStreak: number; userTotal: number } {
+    const nowIso = new Date().toISOString();
     db.exec("BEGIN");
     try {
       this.stmtUpsertGuild.run(guildId, displayName, userId);
       this.stmtUpsertUser.run(guildId, userId, displayName);
+      this.stmtUpdateGlobal.run(nowIso, displayName);
       db.exec("COMMIT");
     } catch (err) {
       db.exec("ROLLBACK");

@@ -35,6 +35,15 @@ db.exec(`
     highest_streak INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (guild_id, user_id)
   );
+
+  CREATE TABLE IF NOT EXISTS global_stats (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    total_slaps INTEGER NOT NULL DEFAULT 0,
+    last_slapped_at TEXT,
+    last_slapped_by TEXT
+  );
+
+  INSERT OR IGNORE INTO global_stats (id, total_slaps) VALUES (1, 0);
 `);
 
 Logger.info(`SQLite database initialized at ${dbPath}`);
